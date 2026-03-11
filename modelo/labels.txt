@@ -1,0 +1,2 @@
+0 Palma aberta
+1 Palma Fechada
