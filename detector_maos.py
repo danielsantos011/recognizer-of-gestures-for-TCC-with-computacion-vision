@@ -5,8 +5,8 @@ import mediapipe as mp
 
 class DetectorMaos:
     """Classe responsável pela detecção das mãos."""
-    def __init__(self, modo=False, max_maos=2, deteccao_confianca=0.5,
-                 rastreio_confianca=0.5, cor_pontos=(0, 0, 255), cor_conexoes=(254, 6, 22)):
+    def __init__(self, modo=False, max_maos=4, deteccao_confianca=0.5,
+                 rastreio_confianca=0.5, cor_pontos=(255, 0, 0), cor_conexoes=(0, 0, 255)):
         """
         Função responsável por inicializar a classe.
         :param modo: Modo da captura da imagem. Se True, a detecção e rastreio serão feitos a todo momento;
