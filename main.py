@@ -1,162 +1,73 @@
+# main.py
+
 import cv2
-import os
 import threading
-import winsound
-
+import os
+from treino_gesto import letra_a
 from detector_maos import DetectorMaos
-from classificador import classificar
+import winsound  # Melhor para WAV no Windows
 
+# Controle para não tocar o áudio repetidamente
 audio_tocado = False
-letra_estavel = None
-contador = 0
-FRAMES_CONFIRMAR = 8
 
-
-def tocar_audio(letra):
-    caminho = os.path.join("audios", f"letra{letra}.wav")
-    if os.path.exists(caminho):
-        winsound.PlaySound(caminho, winsound.SND_ASYNC)
-
-
-def desenhar_interface(frame, letra=None, contador=0):
-    h, w, _ = frame.shape
-
-    # Painel superior (overlay)
-    overlay = frame.copy()
-    cv2.rectangle(overlay, (0, 0), (w, 130), (25, 25, 25), -1)
-    frame[:] = cv2.addWeighted(overlay, 0.6, frame, 0.4, 0)
-
-    # Título
-    cv2.putText(
-        frame,
-        "Reconhecimento de Libras",
-        (20, 40),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        1.1,
-        (255, 255, 255),
-        2
-    )
-
-    # Status
-    if letra:
-        status = "Letra confirmada"
-        cor = (0, 200, 0)
+def tocar_audio(caminho_audio):
+    """Toca o áudio de forma assíncrona"""
+    if os.path.exists(caminho_audio):
+        winsound.PlaySound(caminho_audio, winsound.SND_ASYNC)
     else:
-        status = "Detectando gesto..."
-        cor = (200, 200, 200)
-
-    cv2.putText(
-        frame,
-        status,
-        (20, 75),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.8,
-        cor,
-        2
-    )
-
-    # Caixa da letra
-    if letra:
-        cv2.rectangle(frame, (w - 260, 20), (w - 20, 110), (0, 180, 0), -1)
-        cv2.putText(
-            frame,
-            f"LETRA {letra}",
-            (w - 240, 90),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            1.6,
-            (255, 255, 255),
-            4
-        )
-
-    # Barra de estabilidade
-    barra_max = 200
-    progresso = min(contador / FRAMES_CONFIRMAR, 1.0)
-    largura = int(barra_max * progresso)
-
-    cv2.rectangle(frame, (20, 100), (20 + barra_max, 115), (80, 80, 80), -1)
-    cv2.rectangle(frame, (20, 100), (20 + largura, 115), (0, 200, 0), -1)
-
-    cv2.putText(
-        frame,
-        "Estabilidade",
-        (230, 115),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.6,
-        (200, 200, 200),
-        1
-    )
-
-    # Rodapé
-    cv2.putText(
-        frame,
-        "Pressione Q para sair",
-        (20, h - 20),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.6,
-        (180, 180, 180),
-        1
-    )
-
-    return frame
-
+        print("Arquivo de áudio não encontrado:", caminho_audio)
 
 def main():
-    global audio_tocado, letra_estavel, contador
+    global audio_tocado
 
+    # Caminho absoluto do arquivo de áudio
+    raiz = os.path.dirname(os.path.abspath(__file__))  # pasta onde está o main.py
+    caminho_audio = os.path.join(raiz, "audios", "letraA.wav")  # arquivo dentro de 'audios'
+
+    if not os.path.exists(caminho_audio):
+        print("AVISO: Áudio da letra A não encontrado!")
+        return  # Sai do programa se não encontrar o arquivo
+
+    # Captura da webcam
     cap = cv2.VideoCapture(0)
     detector = DetectorMaos()
 
     while True:
-        ok, frame = cap.read()
-        if not ok:
+        sucesso, imagem = cap.read()
+        if not sucesso:
             break
 
-        frame = cv2.flip(frame, 1)
-        frame = detector.encontrar_maos(frame)
+        imagem = cv2.flip(imagem, 1)  # Espelha a imagem
+        imagem = detector.encontrar_maos(imagem)
 
-        letra_detectada = None
+        letra_detectada = False
 
+        # Verifica se alguma mão foi detectada
         if detector.resultado and detector.resultado.multi_hand_landmarks:
             for mao in detector.resultado.multi_hand_landmarks:
-                letra_detectada = classificar(mao.landmark)
+                if letra_a(mao.landmark):
+                    letra_detectada = True
+                    # Mostra na tela
+                    cv2.putText(imagem, "Letra A", (50, 50),
+                                cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 255, 0), 3)
 
-        # CONTROLE DE ESTABILIDADE
-        if letra_detectada == letra_estavel and letra_detectada is not None:
-            contador += 1
-        else:
-            letra_estavel = letra_detectada
-            contador = 1
-
-        # CONFIRMAÇÃO
-        letra_confirmada = None
-        if contador >= FRAMES_CONFIRMAR and letra_estavel:
-            letra_confirmada = letra_estavel
-
-            if not audio_tocado:
-                threading.Thread(
-                    target=tocar_audio,
-                    args=(letra_estavel,),
-                    daemon=True
-                ).start()
-                audio_tocado = True
-        else:
+        # Toca o áudio apenas se a letra foi detectada e ainda não tocou
+        if letra_detectada and not audio_tocado:
+            threading.Thread(target=tocar_audio, args=(caminho_audio,)).start()
+            audio_tocado = True
+        # Reseta o controle se a letra sumiu
+        elif not letra_detectada:
             audio_tocado = False
 
-        # INTERFACE
-        frame = desenhar_interface(
-            frame,
-            letra_confirmada,
-            contador
-        )
+        # Mostra a captura
+        cv2.imshow("Reconhecimento de Libras", imagem)
 
-        cv2.imshow("Reconhecimento Libras", frame)
-
-        if cv2.waitKey(1) & 0xFF == ord("q"):
+        # Sai ao pressionar 'q'
+        if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
     cap.release()
     cv2.destroyAllWindows()
-
 
 if __name__ == "__main__":
     main()

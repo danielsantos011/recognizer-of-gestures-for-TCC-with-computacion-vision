@@ -6,8 +6,14 @@ def distancia(p1, p2):
         (p1.y - p2.y) ** 2
     )
 
-def dedo_estendido(base, ponta):
-    return ponta.y < base.y - 0.02
-
 def dedo_dobrado(base, ponta):
-    return ponta.y > base.y + 0.02
+    """
+    Retorna True se o dedo estiver dobrado
+    """
+    return ponta.y > base.y
+
+def dedo_estendido(base, ponta):
+    """
+    Retorna True se o dedo estiver estendido
+    """
+    return ponta.y < base.y

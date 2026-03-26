@@ -1,37 +1,23 @@
-from utils import dedo_estendido, dedo_dobrado, distancia
+# treino_gestos.py
 
-IND_BASE, IND_TIP = 5, 8
-MED_BASE, MED_TIP = 9, 12
-ANE_BASE, ANE_TIP = 13, 16
-MIN_BASE, MIN_TIP = 17, 20
-POL_BASE, POL_TIP = 2, 4
+from utils import dedo_dobrado
 
+def letra_a(landmarks):
+    """
+    Reconhecimento da letra A em Libras
+    Mão fechada com polegar para foraa
+    """
 
-def letra_a(lm):
-    dedos = (
-        dedo_dobrado(lm[IND_BASE], lm[IND_TIP]) and
-        dedo_dobrado(lm[MED_BASE], lm[MED_TIP]) and
-        dedo_dobrado(lm[ANE_BASE], lm[ANE_TIP]) and
-        dedo_dobrado(lm[MIN_BASE], lm[MIN_TIP])
-    )
-    polegar_fora = distancia(lm[POL_TIP], lm[IND_BASE]) > 0.06
-    return dedos and polegar_fora
+    # Dedos dobrados
+    indicador = dedo_dobrado(landmarks[5], landmarks[8])
+    medio      = dedo_dobrado(landmarks[9], landmarks[12])
+    anelar     = dedo_dobrado(landmarks[13], landmarks[16])
+    minimo     = dedo_dobrado(landmarks[17], landmarks[20])
 
+    # Polegar para o lado
+    polegar_lado = abs(landmarks[4].x - landmarks[2].x) > 0.04
 
-def letra_b(lm):
-    dedos = (
-        dedo_estendido(lm[IND_BASE], lm[IND_TIP]) and
-        dedo_estendido(lm[MED_BASE], lm[MED_TIP]) and
-        dedo_estendido(lm[ANE_BASE], lm[ANE_TIP]) and
-        dedo_estendido(lm[MIN_BASE], lm[MIN_TIP])
-    )
-    polegar_dentro = distancia(lm[POL_TIP], lm[IND_BASE]) < 0.04
-    return dedos and polegar_dentro
+    if indicador and medio and anelar and minimo and polegar_lado:
+        return True
 
-
-def letra_c(lm):
-    d_ind = distancia(lm[IND_BASE], lm[IND_TIP])
-    d_med = distancia(lm[MED_BASE], lm[MED_TIP])
-    curvo = 0.04 < d_ind < 0.08 and 0.04 < d_med < 0.08
-    polegar_oposto = distancia(lm[POL_TIP], lm[IND_TIP]) < 0.06
-    return curvo and polegar_oposto
+    return False
