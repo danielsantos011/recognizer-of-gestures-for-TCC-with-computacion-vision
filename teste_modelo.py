@@ -1,16 +1,38 @@
 import numpy as np
-from tensorflow.keras.models import load_model
+import pandas as pd
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.utils import to_categorical
 
-# Carregar o modelo
-modelo = load_model("modelo/keras_model.h5")
+LETRAS = ["A", "B", "C", "D", "M", "N"]
 
-print("Modelo carregado com sucesso!")
+X = []
+y = []
 
-# Criar um dado FAKE só para testar
-# Teachable Machine geralmente usa vetores ou imagens normalizadas
-entrada_teste = np.random.rand(1, modelo.input_shape[1])
+for i, letra in enumerate(LETRAS):
+    dados = pd.read_csv(f"dataset_{letra}.csv", header=None).values
+    X.append(dados)
+    y.append(np.full(len(dados), i))
 
-# Fazer previsão
-saida = modelo.predict(entrada_teste)
+X = np.vstack(X)
+y = np.hstack(y)
 
-print("Saída do modelo:", saida)
+y = to_categorical(y, num_classes=len(LETRAS))
+
+# ===== MODELO =====
+modelo = Sequential([
+    Dense(128, activation="relu", input_shape=(42,)),
+    Dense(64, activation="relu"),
+    Dense(len(LETRAS), activation="softmax")
+])
+
+modelo.compile(
+    optimizer="adam",
+    loss="categorical_crossentropy",
+    metrics=["accuracy"]
+)
+
+modelo.fit(X, y, epochs=40, batch_size=16)
+
+modelo.save("modelo_landmarks.h5")
+print("Modelo salvo com sucesso!")

@@ -5,8 +5,8 @@ import mediapipe as mp
 
 class DetectorMaos:
     """Classe responsável pela detecção das mãos."""
-    def __init__(self, modo=False, max_maos=4, deteccao_confianca=0.5,
-                 rastreio_confianca=0.5, cor_pontos=(255, 0, 0), cor_conexoes=(0, 0, 255)):
+    def __init__(self, modo=False, max_maos=2, deteccao_confianca=0.9,
+                 rastreio_confianca=0.9, cor_pontos=(0, 0, 255), cor_conexoes=(255, 1, 253)):
         """
         Função responsável por inicializar a classe.
         :param modo: Modo da captura da imagem. Se True, a detecção e rastreio serão feitos a todo momento;
@@ -135,13 +135,13 @@ def main():
         imagem = cv2.flip(imagem, 1)
 
         # --- Realizar a detecção das mãos --- #
-        imagem = detector.encontrar_maos(imagem)
+        imagem = detector.encontrar_maos(imagem, imagem=True)
 
         # --- Lista com os pontos --- #
-        lista_pontos = detector.encontrar_pontos(imagem)
+        lista_pontos = detector.encontrar_pontos(imagem, imagem=False)
 
         # --- Mostrar a imagem de captura --- #
-        cv2.imshow('Captura', imagem)
+        cv2.imshow('Captura', imagem, desenho=False)
 
         # --- Tempo de atualização da captura --- #
         cv2.waitKey(1)
