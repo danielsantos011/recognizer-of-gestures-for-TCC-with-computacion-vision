@@ -11,6 +11,10 @@ letra_estavel = None
 contador = 0
 FRAMES_CONFIRMAR = 8
 
+# ===== CONTROLE DE TELA CHEIA =====
+fullscreen = True
+WINDOW_NAME = "Reconhecimento Libras"
+
 
 def tocar_audio(letra):
     caminho = os.path.join("audios", f"letra{letra}.wav")
@@ -21,12 +25,10 @@ def tocar_audio(letra):
 def desenhar_interface(frame, letra=None, contador=0):
     h, w, _ = frame.shape
 
-    # Painel superior (overlay)
     overlay = frame.copy()
     cv2.rectangle(overlay, (0, 0), (w, 130), (25, 25, 25), -1)
     frame[:] = cv2.addWeighted(overlay, 0.6, frame, 0.4, 0)
 
-    # Título
     cv2.putText(
         frame,
         "Reconhecimento de Libras",
@@ -37,7 +39,6 @@ def desenhar_interface(frame, letra=None, contador=0):
         2
     )
 
-    # Status
     if letra:
         status = "Letra confirmada"
         cor = (0, 200, 0)
@@ -55,7 +56,6 @@ def desenhar_interface(frame, letra=None, contador=0):
         2
     )
 
-    # Caixa da letra
     if letra:
         cv2.rectangle(frame, (w - 260, 20), (w - 20, 110), (0, 180, 0), -1)
         cv2.putText(
@@ -68,7 +68,6 @@ def desenhar_interface(frame, letra=None, contador=0):
             4
         )
 
-    # Barra de estabilidade
     barra_max = 200
     progresso = min(contador / FRAMES_CONFIRMAR, 1.0)
     largura = int(barra_max * progresso)
@@ -86,10 +85,9 @@ def desenhar_interface(frame, letra=None, contador=0):
         1
     )
 
-    # Rodapé
     cv2.putText(
         frame,
-        "Pressione Q para sair",
+        "Q: sair | F: tela cheia",
         (20, h - 20),
         cv2.FONT_HERSHEY_SIMPLEX,
         0.6,
@@ -100,11 +98,36 @@ def desenhar_interface(frame, letra=None, contador=0):
     return frame
 
 
+def alternar_tela_cheia():
+    global fullscreen
+    if fullscreen:
+        cv2.setWindowProperty(
+            WINDOW_NAME,
+            cv2.WND_PROP_FULLSCREEN,
+            cv2.WINDOW_NORMAL
+        )
+        fullscreen = False
+    else:
+        cv2.setWindowProperty(
+            WINDOW_NAME,
+            cv2.WND_PROP_FULLSCREEN,
+            cv2.WINDOW_FULLSCREEN
+        )
+        fullscreen = True
+
+
 def main():
     global audio_tocado, letra_estavel, contador
 
     cap = cv2.VideoCapture(0)
     detector = DetectorMaos()
+
+    cv2.namedWindow(WINDOW_NAME, cv2.WND_PROP_FULLSCREEN)
+    cv2.setWindowProperty(
+        WINDOW_NAME,
+        cv2.WND_PROP_FULLSCREEN,
+        cv2.WINDOW_FULLSCREEN
+    )
 
     while True:
         ok, frame = cap.read()
@@ -120,14 +143,12 @@ def main():
             for mao in detector.resultado.multi_hand_landmarks:
                 letra_detectada = classificar(mao.landmark)
 
-        # CONTROLE DE ESTABILIDADE
         if letra_detectada == letra_estavel and letra_detectada is not None:
             contador += 1
         else:
             letra_estavel = letra_detectada
             contador = 1
 
-        # CONFIRMAÇÃO
         letra_confirmada = None
         if contador >= FRAMES_CONFIRMAR and letra_estavel:
             letra_confirmada = letra_estavel
@@ -142,17 +163,15 @@ def main():
         else:
             audio_tocado = False
 
-        # INTERFACE
-        frame = desenhar_interface(
-            frame,
-            letra_confirmada,
-            contador
-        )
+        frame = desenhar_interface(frame, letra_confirmada, contador)
+        cv2.imshow(WINDOW_NAME, frame)
 
-        cv2.imshow("Reconhecimento Libras", frame)
+        tecla = cv2.waitKey(1) & 0xFF
 
-        if cv2.waitKey(1) & 0xFF == ord("q"):
+        if tecla == ord("q"):
             break
+        elif tecla == ord("f"):
+            alternar_tela_cheia()
 
     cap.release()
     cv2.destroyAllWindows()
