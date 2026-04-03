@@ -75,7 +75,7 @@ class DetectorMaos:
 
         return imagem
 
-    def encontrar_pontos(self, imagem, mao_num=0, desenho=True, cor=(255, 0, 255), raio=7, ponto_detectado=0):
+    def encontrar_pontos(self, imagem, mao_num=2, desenho=True, cor=(255, 0, 255), raio=7, ponto_detectado=0):
         """
         Função responsável por encontrar a posição dos pontos da(s) mão(s).
         :param imagem: Imagem capturada.

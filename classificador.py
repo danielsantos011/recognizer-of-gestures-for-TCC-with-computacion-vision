@@ -2,7 +2,7 @@ import numpy as np
 from tensorflow.keras.models import load_model
 
 # ===== CONFIGURAÇÕES =====
-MODELO_PATH = "modelo/modelo_landmarks.h5"
+MODELO_PATH = "modelo_landmarks.h5"
 
 LETRAS = [
     "A", "B", "C", "D", "E"
